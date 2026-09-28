@@ -1,5 +1,17 @@
 # STS2 MCP — AI Gameplay Guide
 
+## Fast CLI driver (preferred over individual MCP calls)
+`python .claude/scripts/sts.py` talks to the mod's HTTP API directly. It plays cards by name, re-resolves the hand index before each play, waits through enemy turns, and auto-loots after combat (gold, relics, potions if there's room, then opens the card reward).
+- `sts.py` summary · `sts.py map` ASCII map · `sts.py turn Bodyguard Blight@1 Defend end` · `sts.py pot 0 [target]`
+- `sts.py do choose_map_node index=1` (or any raw action, e.g. choose_event_option, select_card_reward card_index=, choose_rest_option, proceed, select_card, confirm_selection)
+
+## Improvement policy (tooling: sts.py autopilot, rlsim advisor)
+- **Continuous:** notice a problem → log it with evidence (greedy: the page changelog; rlsim: `rlsim_notes.md`) → ship when the logged evidence gives ≥70% confidence it's a net win.
+- **Mid-run:** ship only fixes that will matter for the rest of the current run. Defer the rest.
+- **Between runs:** make the bigger changes (simulator data refresh, scoring rework, new features).
+- **Parallelism:** delegate code work to background subagents while play continues. Live-used files (sts.py, advisor_rlsim.py) are edited in a copy and swapped in atomically.
+- **Commit as we go:** the toolkit repo is `~/Projects/sts2-autoplay` (private GitHub repo; CI runs ruff + unit tests). `.claude/scripts` is a symlink to it.
+
 ## MCP Tool Calling Tips
 
 ### State Polling
@@ -38,6 +50,7 @@
 4. Check enemy HP — if you can kill this turn, skip blocking entirely.
 
 ### Map Pathing
+- **Check the act boss first.** The `sts.py` map summary shows `BOSS:` (from the map state's `boss`/`bosses`). Look it up in GUIDE.md and the wiki (`search_wiki`), then draft and path toward what that fight needs.
 - **Elites** give relics — fight them when healthy (>70% HP).
 - **Rest before Boss** — heal if below 80% HP. Boss fights are long and punishing.
 - **Unknown nodes** are safer than Elites. Good at medium HP.
