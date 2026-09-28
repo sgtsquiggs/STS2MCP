@@ -168,7 +168,7 @@ public static partial class McpMod
                 result["state_type"] = "map";
                 result["map"] = BuildMultiplayerMapState(runState);
             }
-            else if (eventRoom.CanonicalEvent is FakeMerchant)
+            else if ((eventRoom.LocalMutableEvent ?? eventRoom.CanonicalEvent) is FakeMerchant)
             {
                 result["state_type"] = "fake_merchant";
                 result["fake_merchant"] = BuildFakeMerchantState(eventRoom, runState);

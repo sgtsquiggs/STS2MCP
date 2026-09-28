@@ -520,7 +520,7 @@ public static partial class McpMod
                 result["state_type"] = "map";
                 result["map"] = BuildMapState(runState);
             }
-            else if (eventRoom.CanonicalEvent is FakeMerchant)
+            else if ((eventRoom.LocalMutableEvent ?? eventRoom.CanonicalEvent) is FakeMerchant)
             {
                 result["state_type"] = "fake_merchant";
                 result["fake_merchant"] = BuildFakeMerchantState(eventRoom, runState);
@@ -1445,7 +1445,16 @@ public static partial class McpMod
         var state = new Dictionary<string, object?>();
         // LocalMutableEvent holds the per-player mutable copy with populated inventory;
         // CanonicalEvent is the shared template which may not have it.
-        var fakeMerchant = (FakeMerchant)(eventRoom.LocalMutableEvent ?? eventRoom.CanonicalEvent);
+        // Use a safe cast: during room transitions LocalMutableEvent/CanonicalEvent can
+        // momentarily disagree (e.g. one still points at the previous event), so a direct
+        // cast here can throw InvalidCastException transiently.
+        if ((eventRoom.LocalMutableEvent ?? eventRoom.CanonicalEvent) is not FakeMerchant fakeMerchant)
+        {
+            return new Dictionary<string, object?>
+            {
+                ["message"] = "Transitioning between events; try again."
+            };
+        }
 
         state["event_id"] = fakeMerchant.Id.Entry;
         state["event_name"] = SafeGetText(() => fakeMerchant.Title);
