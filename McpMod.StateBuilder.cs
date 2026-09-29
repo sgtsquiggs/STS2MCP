@@ -215,10 +215,12 @@ public static partial class McpMod
                         {
                             result["menu_screen"] = "timeline";
                             result["message"] = "Timeline screen.";
+                            try { AddTimelineRevealState(result, timelineScreen); } catch { }
+                            var timelineBackEnabled = result.TryGetValue("back_enabled", out var tbe) && tbe is false ? false : true;
                             result["options"] = new List<Dictionary<string, object?>>
                             {
                                 new() { ["name"] = "advance", ["enabled"] = true },
-                                new() { ["name"] = "back", ["enabled"] = true }
+                                new() { ["name"] = "back", ["enabled"] = timelineBackEnabled }
                             };
 
                             // Read epochs from ProgressState (stable, not hover-dependent)
@@ -360,7 +362,8 @@ public static partial class McpMod
                                                 ["name"] = "timeline",
                                                 ["enabled"] = false,
                                                 ["reason"] = "manual_epoch_reveal_required",
-                                                ["pending_epoch_ids"] = unrevealedEpochs
+                                                ["pending_epoch_ids"] = unrevealedEpochs,
+                                                ["action"] = "reveal_epoch"
                                             });
                                             continue;
                                         }
@@ -375,6 +378,7 @@ public static partial class McpMod
                             if (blockedOptions.Count > 0)
                                 result["blocked_options"] = blockedOptions;
                         }
+                        try { AddPendingEpochState(result); } catch { }
                         }
                     }
                 }

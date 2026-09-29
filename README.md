@@ -162,7 +162,9 @@ For scripted clients the state also exposes: `battle.ready_for_input` (plus `is_
 `player.hand_full` / `max_hand_size` in combat, and per-node `markers` on the map (Fur Coat nodes get
 `enemies_one_hp: true`). `card_reward.alternatives` lists the reward screen's extra buttons (Skip, REROLL,
 Pael's Wing `SACRIFICE`), chosen with `choose_card_reward_alternative` (`option_id` or `index`). Actions `abandon_run` (`confirm: true`) and `save_and_quit` leave a run from any
-screen. See [docs/raw-full.md](docs/raw-full.md) for details.
+screen. On the main menu and Timeline, `pending_epochs` / `epoch_reveal_blocking` report epochs waiting for a
+Timeline reveal; `reveal_epoch` (optional `epoch_id`) reveals them through the game's Timeline UI, one step per call
+until `done: true`. See [docs/raw-full.md](docs/raw-full.md) for details.
 
 ### Build instructions for macOS
 

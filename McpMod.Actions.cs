@@ -1364,7 +1364,7 @@ public static partial class McpMod
                     return new Dictionary<string, object?>
                     {
                         ["status"] = "ok",
-                        ["message"] = "Epoch unlocks are obtained but not revealed; not forcing timeline reveal from automation",
+                        ["message"] = "Epoch unlocks are obtained but not revealed; use the reveal_epoch action to reveal them",
                         ["pending_epoch_ids"] = unrevealedEpochs,
                         ["manual_action_required"] = true,
                         ["done"] = true
@@ -1531,7 +1531,7 @@ public static partial class McpMod
         return new Dictionary<string, object?>
         {
             ["status"] = "error",
-            ["error"] = "Timeline has obtained epochs that still need to be revealed manually; not opening Timeline because this game state logs invalid unlock-state errors when entered through automation",
+            ["error"] = "Timeline has obtained epochs that still need to be revealed; menu_select does not open it in this state. Use the reveal_epoch action, which opens the Timeline and reveals them step by step",
             ["pending_epoch_ids"] = unrevealedEpochs,
             ["manual_action_required"] = true
         };

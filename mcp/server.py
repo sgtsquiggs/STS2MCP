@@ -804,6 +804,46 @@ async def save_and_quit() -> str:
         return _handle_error(e)
 
 
+@mcp.tool()
+async def reveal_epoch(epoch_id: str | None = None, max_steps: int = 80) -> str:
+    """[Menu] Reveal pending Timeline epochs (state `pending_epochs`) the way a player does.
+
+    When a run unlocks an epoch, the game disables Singleplayer/Multiplayer until it is
+    revealed in the Timeline (state `epoch_reveal_blocking: true`). This opens the
+    Timeline, clicks the epoch slot, waits for the reveal animation, closes the inspect
+    screen, confirms unlock screens, and returns to the main menu. It loops the mod's
+    one-step `reveal_epoch` action until it reports done; the game keeps the Timeline
+    open until every revealable epoch is revealed, so all pending epochs get revealed.
+
+    Args:
+        epoch_id: Pending epoch to reveal first (e.g. "IRONCLAD5_EPOCH"). Default: first pending.
+        max_steps: Safety cap on the number of steps (about 0.5s each).
+    """
+    body: dict = {"action": "reveal_epoch"}
+    if epoch_id:
+        body["epoch_id"] = epoch_id
+    log: list[str] = []
+    try:
+        for _ in range(max(1, max_steps)):
+            result = json.loads(await _post(body))
+            if result.get("status") != "ok":
+                result["steps"] = log
+                return json.dumps(result, indent=2)
+            step = result.get("step")
+            if step != "wait" and (not log or log[-1] != f"{step}: {result.get('message')}"):
+                log.append(f"{step}: {result.get('message')}")
+            if result.get("done"):
+                result["steps"] = log
+                return json.dumps(result, indent=2)
+            await asyncio.sleep(0.5)
+        return json.dumps(
+            {"status": "incomplete", "message": f"Not done after {max_steps} steps; call again", "steps": log},
+            indent=2,
+        )
+    except Exception as e:
+        return _handle_error(e)
+
+
 # ===========================================================================
 # MULTIPLAYER tools — all route through /api/v1/multiplayer
 # ===========================================================================

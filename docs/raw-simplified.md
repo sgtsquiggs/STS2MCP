@@ -60,7 +60,7 @@ All POST requests use JSON body with `"action"` field. All responses include `{ 
 
 | Action | Parameters | When to Use |
 |---|---|---|
-| `menu_select` | `option`: string, `seed`?: string | Choose an advertised menu option. Options are case-insensitive. Submenus include `back` where visible, including `profile_select` options `profile_1`, `profile_2`, `profile_3`, and `back`. Blocking popups expose normalized button labels such as `ignore` or `back`. `game_over` supports `main_menu` only; `continue` returns an error. Supplying `seed` in unsupported contexts such as standard singleplayer character select returns an error and does not start a run. If Timeline has pending obtained epochs that require manual reveal, it may appear in `blocked_options`; selecting `timeline` returns `manual_action_required: true` with `pending_epoch_ids` instead of opening Timeline. Multiplayer flow: on `multiplayer_join` use `refresh` / `back` / `join_<index>` / `join_<player_id>`. On `multiplayer_load_lobby` use `confirm` (or `embark`) to ready up, `unready` to retract, `back` to leave. On `character_select` while in MP, an additional `unready` option becomes available after readying, plus a `lobby` block in state lists ascension, all_ready, and per-player roster. |
+| `menu_select` | `option`: string, `seed`?: string | Choose an advertised menu option. Options are case-insensitive. Submenus include `back` where visible, including `profile_select` options `profile_1`, `profile_2`, `profile_3`, and `back`. Blocking popups expose normalized button labels such as `ignore` or `back`. `game_over` supports `main_menu` only; `continue` returns an error. Supplying `seed` in unsupported contexts such as standard singleplayer character select returns an error and does not start a run. If Timeline has pending obtained epochs, it appears in `blocked_options` (with `"action": "reveal_epoch"`); selecting `timeline` returns `manual_action_required: true` with `pending_epoch_ids` instead of opening Timeline. Use `reveal_epoch`. Multiplayer flow: on `multiplayer_join` use `refresh` / `back` / `join_<index>` / `join_<player_id>`. On `multiplayer_load_lobby` use `confirm` (or `embark`) to ready up, `unready` to retract, `back` to leave. On `character_select` while in MP, an additional `unready` option becomes available after readying, plus a `lobby` block in state lists ascension, all_ready, and per-player roster. |
 
 ### Profiles
 
@@ -212,6 +212,16 @@ Example searches:
 |---|---|---|
 | `abandon_run` | `confirm`: `true` | Give up the run (counts as a loss); then `menu_select` `main_menu` on `game_over`. |
 | `save_and_quit` | _(none)_ | Save & quit to main menu; resume later with `menu_select` `continue`. |
+
+### Epoch Reveal (main menu / Timeline)
+
+Main menu and Timeline states include `pending_epochs: [{id, title, character, state, has_slot}]` and `epoch_reveal_blocking`
+(the game disables Singleplayer/Multiplayer/Compendium until they are revealed). The Timeline adds `timeline_phase`,
+`revealable_slots`, and `back_enabled`.
+
+| Action | Parameters | When to Use |
+|---|---|---|
+| `reveal_epoch` | `epoch_id`?: string | One step of the player's reveal flow (open Timeline, click slot, close inspect, confirm unlock screens, back). Call repeatedly until `done: true`. |
 
 ## Multiplayer Additions
 

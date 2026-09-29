@@ -450,6 +450,23 @@ public static partial class McpMod
 
         string action = actionElem.GetString() ?? "";
 
+        if (action == "reveal_epoch")
+        {
+            try
+            {
+                var epochId = parsed.TryGetValue("epoch_id", out var idElem) && idElem.ValueKind == JsonValueKind.String
+                    ? idElem.GetString()
+                    : null;
+                var resultTask = RunOnMainThread(() => ExecuteRevealEpoch(epochId));
+                SendJson(response, resultTask.GetAwaiter().GetResult());
+            }
+            catch (Exception ex)
+            {
+                SendError(response, 500, $"reveal_epoch failed: {ex.Message}");
+            }
+            return;
+        }
+
         // Handle menu actions separately (no run required)
         if (action == "menu_select")
         {

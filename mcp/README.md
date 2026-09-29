@@ -42,6 +42,7 @@
 | `crystal_sphere_proceed()` | Crystal Sphere | Continue after the minigame finishes |
 | `abandon_run(confirm)` | Any (in run) | Give up the run (loss); requires `confirm=True` |
 | `save_and_quit()` | Any (in run) | Save & quit to main menu; resume with `menu_select("continue")` |
+| `reveal_epoch(epoch_id?, max_steps?)` | Main menu / Timeline | Reveal pending epochs (`pending_epochs` in state) through the Timeline UI; loops the one-step API until done and returns to the main menu |
 
 ### Profile Tools
 

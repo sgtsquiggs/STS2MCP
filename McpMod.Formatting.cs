@@ -237,6 +237,25 @@ public static partial class McpMod
         if (state.TryGetValue("options", out var optionsObj) && optionsObj != null)
             FormatMenuOptionsMarkdown(sb, optionsObj);
 
+        if (state.TryGetValue("pending_epochs", out var pendingObj) &&
+            pendingObj is List<Dictionary<string, object?>> pendingEpochs &&
+            pendingEpochs.Count > 0)
+        {
+            bool blocking = state.TryGetValue("epoch_reveal_blocking", out var blockObj) && blockObj is true;
+            sb.AppendLine($"### Pending epochs ({pendingEpochs.Count}){(blocking ? " - main menu blocked until revealed" : "")}");
+            foreach (var epoch in pendingEpochs)
+            {
+                var id = epoch.GetValueOrDefault("id")?.ToString() ?? "?";
+                var title = epoch.GetValueOrDefault("title")?.ToString();
+                var character = epoch.GetValueOrDefault("character")?.ToString();
+                sb.AppendLine($"- `{id}`{(title != null ? $" **{title}**" : "")}{(character != null ? $" ({character})" : "")}");
+            }
+            if (state.TryGetValue("timeline_phase", out var phaseObj) && phaseObj != null)
+                sb.AppendLine($"Timeline phase: {phaseObj}");
+            sb.AppendLine("Use the `reveal_epoch` action repeatedly until `done` is true.");
+            sb.AppendLine();
+        }
+
         if (state.TryGetValue("characters", out var charactersObj) &&
             charactersObj is List<Dictionary<string, object?>> characters &&
             characters.Count > 0)

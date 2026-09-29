@@ -211,7 +211,24 @@ No run in progress.
 ```
 
 Use `menu_select` with one of the advertised options. Options are accepted case-insensitively.
-If a visible option is intentionally withheld from automation, the state may also include `blocked_options` with a reason. For example, Timeline can be blocked while obtained epochs still need manual reveal because opening that game state through automation can trigger invalid unlock-state errors.
+If a visible option is intentionally withheld from automation, the state may also include `blocked_options` with a reason. For example, `timeline` is listed there (reason `manual_epoch_reveal_required`, `"action": "reveal_epoch"`) while obtained epochs still need to be revealed; use the `reveal_epoch` action instead of `menu_select`.
+
+On `main` and `timeline` the state also carries:
+
+```jsonc
+{
+  "pending_epochs": [   // SaveManager.GetRevealableEpochs(): obtained, not yet revealed
+    { "id": "IRONCLAD5_EPOCH", "title": "...", "character": "IRONCLAD", "state": "Obtained", "has_slot": true }
+  ],
+  "epoch_reveal_blocking": true,   // game has disabled Singleplayer/Multiplayer/Compendium until they are revealed
+  "epoch_reveal_available": true   // only when pending_epochs is non-empty; false if a run save disables the Timeline
+}
+```
+
+`character` is null for non-character epochs. `has_slot: false` (state `ObtainedNoSlot`) means the epoch gets a Timeline slot
+once an earlier epoch is revealed. The `timeline` screen adds `timeline_phase` (`tutorial` | `inspect` | `unlock_screen` |
+`busy` | `ready`), `timeline_button_enabled`, `timeline_epoch_id` (inspect), `timeline_unlock_screen_type` (unlock screen),
+`timeline_unlock_screen_queued`, `back_enabled`, and `revealable_slots: [{id, title, character, spawned}]` (slots the player can click).
 
 Menu sub-screens expose their own options:
 
@@ -1125,7 +1142,44 @@ Select an option from the main menu, a menu submenu, profile select, character s
 | `seed` | string | No | Only supported in menu contexts that expose a real seeded flow. Standard singleplayer character select currently returns an error without starting a run when `seed` is supplied. |
 
 `game_over` advertises only `main_menu`. `continue` is not actionable on that screen and returns an error.
-If `timeline` is blocked by pending obtained epochs, `menu_select` returns an error with `manual_action_required: true` and `pending_epoch_ids` instead of opening Timeline.
+If `timeline` is blocked by pending obtained epochs, `menu_select` returns an error with `manual_action_required: true` and `pending_epoch_ids` instead of opening Timeline; use [`reveal_epoch`](#reveal_epoch).
+
+### `reveal_epoch`
+
+Reveal pending Timeline epochs through the game's own UI, the way a player does: open the Timeline from the main menu,
+click the epoch slot (`NEpochSlot` -> `SaveManager.RevealEpoch`), wait out the reveal animation, close the inspect screen,
+confirm each unlock screen (cards / relics / potions / character; timeline expansions close themselves), and press the
+Timeline back button once nothing is left. Works from the main menu or the Timeline (no run in progress). The save is
+written by the game (`SaveProgressFile` in the reveal animation), never edited directly.
+
+Each call performs **one step** and is idempotent. Call it repeatedly (~0.5 s apart) until `done` is `true`; the game
+keeps the Timeline's back button disabled until every revealable epoch is revealed, so the loop reveals all of them.
+
+```json
+{ "action": "reveal_epoch" }
+{ "action": "reveal_epoch", "epoch_id": "IRONCLAD5_EPOCH" }
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `epoch_id` | string | No | Which pending epoch to click first. Default: the first revealable slot. Must be pending and have a slot (`has_slot: true`); an already-revealed id is accepted and the loop just continues. |
+
+Response:
+
+```jsonc
+{
+  "status": "ok",
+  "step": "reveal",        // open_timeline | tutorial | reveal | wait | close_inspect | confirm_unlock | open_queued_unlock | close_timeline | none
+  "message": "Revealed IRONCLAD5_EPOCH",
+  "epoch_id": "IRONCLAD5_EPOCH",
+  "done": false,           // true once nothing is pending and the Timeline is closed
+  "pending_epochs": [ ... ],
+  "hint": "Call reveal_epoch again (after ~0.5s) until done is true."
+}
+```
+
+Errors (`status: "error"`): run in progress, a popup is open, not on the top-level main menu, a run save exists (the game
+disables the Timeline until the run is continued or abandoned), unknown / non-pending `epoch_id`, or an epoch without a slot yet.
 
 ---
 
