@@ -1080,6 +1080,7 @@ public static partial class McpMod
         battle["round"] = combatState.RoundNumber;
         battle["turn"] = combatState.CurrentSide.ToString().ToLower();
         battle["is_play_phase"] = IsPlayPhase(combatState);
+        AddBattleReadiness(battle, LocalContext.GetMe(runState));
 
         // Enemies
         var enemies = new List<Dictionary<string, object?>>();
@@ -1130,6 +1131,7 @@ public static partial class McpMod
                 cardIndex++;
             }
             state["hand"] = hand;
+            AddHandLimits(state, hand.Count);
 
             // Pile counts
             state["draw_pile_count"] = combatState.DrawPile.Cards.Count;
@@ -1227,6 +1229,9 @@ public static partial class McpMod
         }
         state["potions"] = potions;
         state["max_potion_slots"] = player.MaxPotionCount;
+
+        state["deck"] = BuildDeckList(player);
+        state["deck_size"] = player.Deck.Cards.Count;
 
         return state;
     }
@@ -1737,14 +1742,20 @@ public static partial class McpMod
                     ["row"] = pt.coord.row,
                     ["type"] = pt.PointType.ToString()
                 };
+                AddMapPointMarkers(option, pt);
 
                 // 1-level lookahead
                 var children = pt.Children
                     .OrderBy(c => c.coord.col)
-                    .Select(c => new Dictionary<string, object?>
+                    .Select(c =>
                     {
-                        ["col"] = c.coord.col, ["row"] = c.coord.row,
-                        ["type"] = c.PointType.ToString()
+                        var child = new Dictionary<string, object?>
+                        {
+                            ["col"] = c.coord.col, ["row"] = c.coord.row,
+                            ["type"] = c.PointType.ToString()
+                        };
+                        AddMapPointMarkers(child, c);
+                        return child;
                     }).ToList();
                 if (children.Count > 0)
                     option["leads_to"] = children;
@@ -1822,7 +1833,7 @@ public static partial class McpMod
 
     private static Dictionary<string, object?> BuildMapNode(MapPoint pt)
     {
-        return new Dictionary<string, object?>
+        var node = new Dictionary<string, object?>
         {
             ["col"] = pt.coord.col,
             ["row"] = pt.coord.row,
@@ -1832,6 +1843,8 @@ public static partial class McpMod
                 .Select(c => new List<int> { c.coord.col, c.coord.row })
                 .ToList()
         };
+        AddMapPointMarkers(node, pt);
+        return node;
     }
 
     private static Dictionary<string, object?> BuildRewardsState(NRewardsScreen rewardsScreen, RunState runState)

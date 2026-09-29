@@ -755,6 +755,30 @@ async def crystal_sphere_proceed() -> str:
         return _handle_error(e)
 
 
+@mcp.tool()
+async def abandon_run(confirm: bool = False) -> str:
+    """[Run] Abandon the current run (pause menu Give Up). Counts as a loss.
+
+    Requires confirm=True. Afterwards the game over screen appears; use menu_select("main_menu").
+
+    Args:
+        confirm: Must be True to actually abandon.
+    """
+    try:
+        return await _post({"action": "abandon_run", "confirm": confirm})
+    except Exception as e:
+        return _handle_error(e)
+
+
+@mcp.tool()
+async def save_and_quit() -> str:
+    """[Run] Save & quit to the main menu (pause menu Save & Quit). Resume with menu_select("continue")."""
+    try:
+        return await _post({"action": "save_and_quit"})
+    except Exception as e:
+        return _handle_error(e)
+
+
 # ===========================================================================
 # MULTIPLAYER tools — all route through /api/v1/multiplayer
 # ===========================================================================

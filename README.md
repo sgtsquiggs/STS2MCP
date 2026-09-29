@@ -144,6 +144,25 @@ out/STS2_MCP/STS2_MCP.dll           ->  <game_install>/mods/STS2_MCP.dll
 mod_manifest.json                   ->  <game_install>/mods/STS2_MCP.json
 ```
 
+### Build on Linux (no local .NET SDK)
+
+Using the official SDK container (cap its memory):
+
+```sh
+GAME="$HOME/.local/share/Steam/steamapps/common/Slay the Spire 2"
+podman run --rm --memory 3g --memory-swap 3g -v "$PWD:/src:Z" -v "$GAME:/game:ro" -w /src \
+  mcr.microsoft.com/dotnet/sdk:9.0 \
+  dotnet build STS2_MCP.csproj -c Release -o /src/out/STS2_MCP -p:STS2GameDir=/game
+```
+
+### Automation / harness fields
+
+For scripted clients the state also exposes: `battle.ready_for_input` (plus `is_action_queue_empty`,
+`is_action_running`, `player_actions_disabled`, `player_phase`), `player.deck` on every in-run screen,
+`player.hand_full` / `max_hand_size` in combat, and per-node `markers` on the map (Fur Coat nodes get
+`enemies_one_hp: true`). Actions `abandon_run` (`confirm: true`) and `save_and_quit` leave a run from any
+screen. See [docs/raw-full.md](docs/raw-full.md) for details.
+
 ### Build instructions for macOS
 
 Install dotnet to compile the mod:

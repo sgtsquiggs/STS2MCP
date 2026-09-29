@@ -25,7 +25,9 @@ Singleplayer and multiplayer endpoints are mutually exclusive (HTTP 409 if misma
 Every JSON response includes:
 - `state_type` — which screen the game is on (see below)
 - `run` — `{ act, floor, ascension }` (absent for `menu`)
-- `player` — full player state: character, HP, gold, relics, potions, `max_potion_slots` (belt capacity, grows with relics), and during combat: energy, hand, piles, orbs (absent for `menu`)
+- `player` — full player state: character, HP, gold, relics, potions, `max_potion_slots` (belt capacity, grows with relics), `deck` / `deck_size` (full deck: id, name, type, rarity, cost, is_upgraded, enchantment, affliction), and during combat: energy, hand, `hand_size` / `max_hand_size` / `hand_full`, piles, orbs (absent for `menu`)
+- `battle` (combat) — also has readiness fields: `ready_for_input` (safe to play/end turn now: hand dealt, no actions queued or running), `is_action_queue_empty`, `is_action_running`, `player_actions_disabled`, `player_phase`
+- `map` nodes (`nodes`, `next_options`, `leads_to`) have `markers` (e.g. Fur Coat: `effect: "enemies_one_hp"`, also `enemies_one_hp: true` on the node; Spoils Map: `buried_treasure`)
 
 | `state_type` | Screen | Available Actions |
 |---|---|---|
@@ -155,7 +157,7 @@ Example searches:
 
 | Action | Parameters | When to Use |
 |---|---|---|
-| `choose_rest_option` | `index`: int | Choose rest, smith, or other option. |
+| `choose_rest_option` | `index`: int | Choose rest, smith, or other option. A repeat after success returns `ok` with `already_chosen: true`. |
 | `proceed` | _(none)_ | Leave the rest site. |
 
 ### Shop (`shop`)
@@ -202,6 +204,13 @@ Example searches:
 | `crystal_sphere_set_tool` | `tool`: `"big"` or `"small"` | Switch divination tool. |
 | `crystal_sphere_click_cell` | `x`: int, `y`: int | Reveal a cell. |
 | `crystal_sphere_proceed` | _(none)_ | Finish the minigame. |
+
+### Leaving a Run (any in-run screen, singleplayer)
+
+| Action | Parameters | When to Use |
+|---|---|---|
+| `abandon_run` | `confirm`: `true` | Give up the run (counts as a loss); then `menu_select` `main_menu` on `game_over`. |
+| `save_and_quit` | _(none)_ | Save & quit to main menu; resume later with `menu_select` `continue`. |
 
 ## Multiplayer Additions
 

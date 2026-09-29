@@ -59,6 +59,9 @@ Always present at the top level (except `menu`). Contains everything about the l
   "max_energy": 3,
   "stars": 2,               // Regent only; omitted if 0 and character doesn't always show stars
   "hand": [ /* Card Objects */ ],
+  "hand_size": 5,
+  "max_hand_size": 10,      // CardPile.MaxCardsInHand; cards added to a full hand are lost
+  "hand_full": false,       // hand_size >= max_hand_size - avoid card-generating potions/effects
   "draw_pile_count": 15,
   "discard_pile_count": 3,
   "exhaust_pile_count": 1,
@@ -102,7 +105,24 @@ Always present at the top level (except `menu`). Contains everything about the l
       "keywords": [ /* Keyword Objects */ ]
     }
   ],
-  "max_potion_slots": 3      // Belt capacity. Default 3, grows with belt-expanding relics (e.g. Potion Belt: +2). Use to detect a full belt: len(potions) >= max_potion_slots.
+  "max_potion_slots": 3,     // Belt capacity. Default 3, grows with belt-expanding relics (e.g. Potion Belt: +2). Use to detect a full belt: len(potions) >= max_potion_slots.
+
+  // Full (master) deck, on every in-run screen (map, combat, shop, rest, events, rewards, ...)
+  "deck_size": 12,
+  "deck": [
+    {
+      "index": 0,
+      "id": "STRIKE_IRONCLAD",
+      "name": "Strike",
+      "type": "Attack",
+      "rarity": "Basic",
+      "cost": "1",            // "X" for X-cost
+      "star_cost": null,
+      "is_upgraded": false,
+      "enchantment": null,    // or { "id", "name", "amount" }
+      "affliction": null      // or { "id", "name" }
+    }
+  ]
 }
 ```
 
@@ -341,6 +361,14 @@ Run state or room type not recognized.
     "round": 1,
     "turn": "player",       // "player" or "enemy"
     "is_play_phase": true,
+    // Readiness signals (use ready_for_input before play_card / end_turn):
+    "is_action_queue_empty": true,   // RunManager.ActionQueueSet.IsEmpty - no queued/running/paused actions
+    "is_action_running": false,      // ActionExecutor.IsRunning - an action is mid-execution
+    "player_actions_disabled": false,// CombatManager.PlayerActionsDisabled - set by end turn until next turn start
+    "player_phase": "Play",          // local PlayerTurnPhase: None, Start, AutoPrePlay, Play, AutoPostPlay, End
+    "ready_for_input": true,         // player side's turn, phase Play (hand fully dealt, start-of-turn hooks done),
+                                     // turn loop handed control to the player, queue empty, nothing running,
+                                     // no hand selection open, game not paused
     "enemies": [
       {
         "entity_id": "JAW_WORM_0",    // Synthesized ID for targeting
@@ -484,9 +512,16 @@ Pick one card to add to your deck. Appears after claiming a card reward, or dire
         "index": 0,
         "col": 2, "row": 3,
         "type": "RestSite",
+        "markers": [],
         "leads_to": [            // 1-level lookahead (children)
-          { "col": 1, "row": 4, "type": "Elite" },
-          { "col": 3, "row": 4, "type": "Shop" }
+          { "col": 1, "row": 4, "type": "Elite", "markers": [] },
+          {
+            "col": 3, "row": 4, "type": "Monster",
+            "markers": [
+              { "id": "FUR_COAT", "name": "Fur Coat", "source": "relic", "effect": "enemies_one_hp" }
+            ],
+            "enemies_one_hp": true
+          }
         ]
       }
     ],
@@ -494,7 +529,8 @@ Pick one card to add to your deck. Appears after claiming a card reward, or dire
       {
         "col": 3, "row": 0,
         "type": "Start",
-        "children": [ [2, 1], [3, 1], [4, 1] ]  // [col, row] pairs
+        "children": [ [2, 1], [3, 1], [4, 1] ],  // [col, row] pairs
+        "markers": []
       }
     ],
     "boss": {
@@ -1245,6 +1281,10 @@ Choose a rest site option (rest, smith, etc.).
 |---|---|---|---|
 | `index` | int | Yes | 0-based index matching the option's `index` from state (disabled options return an error) |
 
+Success responses include `option_id`. If the option was already chosen (the options were cleared, the room
+moved on to the map, or a quick retry of the same index would now hit a different option), the response is
+`{ "status": "ok", "already_chosen": true, "option_id": "...", "message": "..." }` instead of an error.
+
 ### `shop_purchase`
 
 Purchase a shop item.
@@ -1401,6 +1441,28 @@ Finish the Crystal Sphere minigame.
 
 ```json
 { "action": "crystal_sphere_proceed" }
+```
+
+### `abandon_run`
+
+Abandon the current run (the pause menu's Give Up). The run ends as a loss: the game over screen follows,
+then use `menu_select` with `main_menu`. Singleplayer only.
+
+```json
+{ "action": "abandon_run", "confirm": true }
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `confirm` | bool | Yes | Must be `true`; guards against accidental abandons |
+
+### `save_and_quit`
+
+Save & quit to the main menu (the pause menu's Save & Quit). The run resumes from its last save (written on
+room entry) via `menu_select` with `continue`. Singleplayer only.
+
+```json
+{ "action": "save_and_quit" }
 ```
 
 ---

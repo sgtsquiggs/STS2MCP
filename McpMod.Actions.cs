@@ -87,6 +87,8 @@ public static partial class McpMod
             "crystal_sphere_set_tool" => ExecuteCrystalSphereSetTool(data),
             "crystal_sphere_click_cell" => ExecuteCrystalSphereClickCell(data),
             "crystal_sphere_proceed" => ExecuteCrystalSphereProceed(),
+            "abandon_run" => ExecuteAbandonRun(data),
+            "save_and_quit" => ExecuteSaveAndQuit(),
             _ => Error($"Unknown action: {action}")
         };
     }
@@ -328,28 +330,103 @@ public static partial class McpMod
 
         int index = indexElem.GetInt32();
 
+        var currentRoom = RunManager.Instance.DebugOnlyGetState()?.CurrentRoom;
+        var last = _lastRestChoice;
+        bool sameRoomAsLastChoice = last != null && ReferenceEquals(last.Room, currentRoom);
+        bool lastChoiceRecent = last != null && Time.GetTicksMsec() - last.TicksMsec < RestRetryWindowMsec;
+
         var restRoom = NRestSiteRoom.Instance;
+        var buttons = restRoom != null ? FindAll<NRestSiteButton>(restRoom) : new List<NRestSiteButton>();
+
+        // A choice already went through (options cleared, or the room was left for the map):
+        // report success instead of an error so a client's retry doesn't see a spurious failure.
+        if (buttons.Count == 0 && last != null
+            && (sameRoomAsLastChoice || (lastChoiceRecent && currentRoom is not RestSiteRoom)))
+            return RestAlreadyChosen(last);
+
         if (restRoom == null)
             return Error("Rest site room is not open");
-
-        var buttons = FindAll<NRestSiteButton>(restRoom);
-
         if (buttons.Count == 0)
             return Error("No rest site options available");
         if (index < 0 || index >= buttons.Count)
+        {
+            if (sameRoomAsLastChoice && lastChoiceRecent)
+                return RestAlreadyChosen(last!);
             return Error($"Rest option index {index} out of range ({buttons.Count} options)");
+        }
 
         var button = buttons[index];
+        // The chosen option is removed from the list when others stay open (some relics allow
+        // several choices), so a quick retry of the same index would hit a different option.
+        if (sameRoomAsLastChoice && lastChoiceRecent && index == last!.Index
+            && button.Option.OptionId != last.OptionId)
+            return RestAlreadyChosen(last);
+
         if (!button.Option.IsEnabled)
             return Error($"Rest option {index} ({button.Option.OptionId}) is disabled");
         string optionName = SafeGetText(() => button.Option.Title) ?? button.Option.OptionId;
         button.ForceClick();
+        _lastRestChoice = new RestChoice(currentRoom, index, button.Option.OptionId, optionName, Time.GetTicksMsec());
 
         return new Dictionary<string, object?>
         {
             ["status"] = "ok",
-            ["message"] = $"Selecting rest site option: {optionName}"
+            ["message"] = $"Selecting rest site option: {optionName}",
+            ["option_id"] = button.Option.OptionId
         };
+    }
+
+    private sealed record RestChoice(object? Room, int Index, string OptionId, string OptionName, ulong TicksMsec);
+
+    private static RestChoice? _lastRestChoice;
+
+    private const ulong RestRetryWindowMsec = 15000;
+
+    private static Dictionary<string, object?> RestAlreadyChosen(RestChoice last) => new()
+    {
+        ["status"] = "ok",
+        ["already_chosen"] = true,
+        ["option_id"] = last.OptionId,
+        ["message"] = $"Rest site option already chosen: {last.OptionName}"
+    };
+
+    private static Dictionary<string, object?> ExecuteAbandonRun(Dictionary<string, JsonElement> data)
+    {
+        if (!data.TryGetValue("confirm", out var confirmElem)
+            || confirmElem.ValueKind != JsonValueKind.True)
+            return Error("abandon_run ends the run as a loss; pass \"confirm\": true to proceed");
+        if (RunManager.Instance.NetService.Type != MegaCrit.Sts2.Core.Multiplayer.Game.NetGameType.Singleplayer)
+            return Error("abandon_run is only supported in singleplayer");
+
+        RunManager.Instance.Abandon();
+        return new Dictionary<string, object?>
+        {
+            ["status"] = "ok",
+            ["message"] = "Abandoning run. The game over screen follows; use menu_select main_menu to leave it."
+        };
+    }
+
+    private static Dictionary<string, object?> ExecuteSaveAndQuit()
+    {
+        if (RunManager.Instance.NetService.Type != MegaCrit.Sts2.Core.Multiplayer.Game.NetGameType.Singleplayer)
+            return Error("save_and_quit is only supported in singleplayer");
+        var game = MegaCrit.Sts2.Core.Nodes.NGame.Instance;
+        if (game == null)
+            return Error("Game node not available");
+
+        // Mirrors the pause menu's Save & Quit: the run save is the one written on room entry.
+        MegaCrit.Sts2.Core.Helpers.TaskHelper.RunSafely(SaveAndQuitAsync(game));
+        return new Dictionary<string, object?>
+        {
+            ["status"] = "ok",
+            ["message"] = "Saving and returning to main menu. Continue the run later with menu_select continue."
+        };
+    }
+
+    private static async System.Threading.Tasks.Task SaveAndQuitAsync(MegaCrit.Sts2.Core.Nodes.NGame game)
+    {
+        try { MegaCrit.Sts2.Core.Nodes.Audio.NRunMusicController.Instance?.StopMusic(); } catch { }
+        await game.ReturnToMainMenu();
     }
 
     private static Dictionary<string, object?> ExecuteShopPurchase(Player player, Dictionary<string, JsonElement> data)

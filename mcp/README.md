@@ -39,6 +39,8 @@
 | `crystal_sphere_set_tool(tool)` | Crystal Sphere | Switch the active divination tool |
 | `crystal_sphere_click_cell(x, y)` | Crystal Sphere | Click a hidden cell in the grid |
 | `crystal_sphere_proceed()` | Crystal Sphere | Continue after the minigame finishes |
+| `abandon_run(confirm)` | Any (in run) | Give up the run (loss); requires `confirm=True` |
+| `save_and_quit()` | Any (in run) | Save & quit to main menu; resume with `menu_select("continue")` |
 
 ### Profile Tools
 
