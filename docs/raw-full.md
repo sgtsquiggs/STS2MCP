@@ -394,6 +394,8 @@ Run state or room type not recognized.
 }
 ```
 
+- **Kaiser Crab (Surrounded):** while the player has `SURROUNDED_POWER`, `player.facing` is `"left"` or `"right"` (also as `facing` on that power's `status` entry). Enemies carrying `BACK_ATTACK_LEFT_POWER` / `BACK_ATTACK_RIGHT_POWER` (listed in their `status`) also get `back_attack: "left"|"right"`. Facing `right`, `back_attack: "left"` enemies deal 1.5x damage to the player; facing `left`, `back_attack: "right"` enemies do. Targeting (playing a card or potion on) an enemy on the side behind you turns you to face it.
+
 ### `hand_select` — In-Combat Card Selection
 
 Appears when a card effect prompts "Select a card to exhaust/discard/upgrade". **Not** an overlay — happens within the combat hand.

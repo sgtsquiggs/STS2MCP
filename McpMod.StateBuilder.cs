@@ -11,6 +11,7 @@ using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Potions;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.Entities.Merchant;
@@ -1193,6 +1194,12 @@ public static partial class McpMod
         // Powers (status effects)
         state["status"] = BuildPowersState(creature);
 
+        // Kaiser Crab: SurroundedPower tracks which way the player faces. Enemies with the
+        // BackAttack power for the side behind the player deal 1.5x damage.
+        var facing = GetSurroundedFacing(creature);
+        if (facing != null)
+            state["facing"] = facing;
+
         // Relics
         var relics = new List<Dictionary<string, object?>>();
         foreach (var relic in player.Relics)
@@ -1351,6 +1358,11 @@ public static partial class McpMod
             ["block"] = creature.Block,
             ["status"] = BuildPowersState(creature)
         };
+
+        // Kaiser Crab arms: which side this enemy attacks the player's back from.
+        var backAttack = GetBackAttackSide(creature);
+        if (backAttack != null)
+            state["back_attack"] = backAttack;
 
         // Intents
         if (monster?.NextMove is MoveState moveState)
@@ -2485,7 +2497,7 @@ public static partial class McpMod
                 }
                 resolvedDesc ??= SafeGetText(() => power.SmartDescription);
 
-                powers.Add(new Dictionary<string, object?>
+                var entry = new Dictionary<string, object?>
                 {
                     ["id"] = power.Id.Entry,
                     ["name"] = SafeGetText(() => power.Title),
@@ -2493,11 +2505,53 @@ public static partial class McpMod
                     ["type"] = power.Type.ToString(),
                     ["description"] = resolvedDesc,
                     ["keywords"] = BuildHoverTips(extraTips)
-                });
+                };
+                if (power is SurroundedPower surrounded)
+                    entry["facing"] = surrounded.Facing == SurroundedPower.Direction.Left ? "left" : "right";
+                powers.Add(entry);
             }
-            catch { /* skip this power - game engine state may be inconsistent */ }
+            catch
+            {
+                // Game engine state may be inconsistent (hover tip / loc resolution). Keep a
+                // minimal entry so the id is still visible (e.g. BackAttack powers).
+                try
+                {
+                    powers.Add(new Dictionary<string, object?>
+                    {
+                        ["id"] = power.Id.Entry,
+                        ["name"] = SafeGetText(() => power.Title),
+                        ["amount"] = power.DisplayAmount,
+                        ["type"] = power.Type.ToString(),
+                        ["description"] = null,
+                        ["keywords"] = new List<Dictionary<string, object?>>()
+                    });
+                }
+                catch { /* skip this power entirely */ }
+            }
         }
         return powers;
+    }
+
+    private static string? GetSurroundedFacing(Creature creature)
+    {
+        try
+        {
+            var surrounded = creature.Powers.OfType<SurroundedPower>().FirstOrDefault();
+            if (surrounded == null) return null;
+            return surrounded.Facing == SurroundedPower.Direction.Left ? "left" : "right";
+        }
+        catch { return null; }
+    }
+
+    private static string? GetBackAttackSide(Creature creature)
+    {
+        try
+        {
+            if (creature.Powers.OfType<BackAttackLeftPower>().Any()) return "left";
+            if (creature.Powers.OfType<BackAttackRightPower>().Any()) return "right";
+        }
+        catch { }
+        return null;
     }
 
     private static List<Dictionary<string, object?>> BuildPetsState(Player player)

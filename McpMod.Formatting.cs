@@ -355,6 +355,8 @@ public static partial class McpMod
             sb.AppendLine("## Player (You)");
             string stars = player.TryGetValue("stars", out var s) && s != null ? $" | Stars: {s}" : "";
             sb.AppendLine($"**{player["character"]}** - HP: {player["hp"]}/{player["max_hp"]} | Block: {player["block"]} | Energy: {player["energy"]}/{player["max_energy"]}{stars} | Gold: {player["gold"]}");
+            if (player.TryGetValue("facing", out var facing) && facing != null)
+                sb.AppendLine($"**Facing:** {facing} (enemies with back_attack on the other side deal 1.5x damage)");
             sb.AppendLine();
 
             FormatListSection(sb, "Status", player, "status", p => $"- **{p["name"]}** ({FormatStatusAmount(p["amount"])}): {p["description"]}");
@@ -405,7 +407,8 @@ public static partial class McpMod
             foreach (var enemy in enemies)
             {
                 sb.AppendLine($"### {enemy["name"]} (`{enemy["entity_id"]}`)");
-                sb.AppendLine($"HP: {enemy["hp"]}/{enemy["max_hp"]} | Block: {enemy["block"]}");
+                string backAttack = enemy.TryGetValue("back_attack", out var ba) && ba != null ? $" | Back attack: {ba}" : "";
+                sb.AppendLine($"HP: {enemy["hp"]}/{enemy["max_hp"]} | Block: {enemy["block"]}{backAttack}");
 
                 if (enemy.TryGetValue("intents", out var intentsObj) && intentsObj is List<Dictionary<string, object?>> intents && intents.Count > 0)
                 {
