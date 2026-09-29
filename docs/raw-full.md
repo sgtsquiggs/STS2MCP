@@ -486,12 +486,18 @@ Pick one card to add to your deck. Appears after claiming a card reward, or dire
         "keywords": [ /* Keyword Objects */ ]
       }
     ],
-    "can_skip": true
+    "can_skip": true,
+    "alternatives": [
+      { "index": 0, "id": "Skip", "title": "Skip", "after": "DismissScreenAndKeepReward" },
+      { "index": 1, "id": "SACRIFICE", "title": "Sacrifice", "after": "DismissScreenAndRemoveReward" }
+    ]
   },
   "run": { ... },
   "player": { ... }
 }
 ```
+
+- `alternatives` lists the non-card buttons on the card reward screen, in on-screen order: `Skip` (if the reward can be skipped), `REROLL` (if it can be rerolled), and relic-added options such as Pael's Wing's `SACRIFICE`. `id` is the game's `OptionId` (case as the game defines it; `null` if it could not be resolved), `title` is the localized button label, and `after` is what happens after it is chosen: `DismissScreenAndKeepReward` (screen closes, card reward stays on the rewards screen), `DismissScreenAndRemoveReward` (screen closes, reward is consumed), `DoNothing` (screen stays open, e.g. reroll refreshes the cards). Pick one with `choose_card_reward_alternative`.
 
 ### `map` — Map Navigation
 
@@ -1234,6 +1240,22 @@ Skip the card reward (if a skip/bowl option is available).
 ```json
 { "action": "skip_card_reward" }
 ```
+
+### `choose_card_reward_alternative`
+
+Activate one of the card reward screen's `alternatives` (Skip, Reroll, Pael's Wing's Sacrifice, ...), exactly as clicking its button would: the option's effect runs and the screen is dismissed / the reward removed according to its `after` value.
+
+```json
+{ "action": "choose_card_reward_alternative", "option_id": "SACRIFICE" }
+{ "action": "choose_card_reward_alternative", "index": 1 }
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `option_id` | string | One of | `alternatives[].id`, case-insensitive (takes precedence over `index`) |
+| `index` | int | One of | `alternatives[].index` |
+
+Response: `{ "status": "ok", "message": ..., "option_id": "SACRIFICE", "after": "DismissScreenAndRemoveReward" }`. Errors (listing the available `index:id` pairs) if the screen is not open, the option is unknown, or the button is disabled.
 
 ### `proceed`
 

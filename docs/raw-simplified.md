@@ -36,7 +36,7 @@ Every JSON response includes:
 | `monster` / `elite` / `boss` | In combat | `play_card`, `use_potion`, `end_turn` |
 | `hand_select` | In-combat card selection (exhaust, discard, upgrade) | `combat_select_card`, `combat_confirm_selection` |
 | `rewards` | Rewards screen (post-combat or event-triggered) | `claim_reward`, `proceed` |
-| `card_reward` | Pick a card to add to deck | `select_card_reward`, `skip_card_reward` |
+| `card_reward` | Pick a card to add to deck | `select_card_reward`, `skip_card_reward`, `choose_card_reward_alternative` |
 | `map` | Map navigation | `choose_map_node` |
 | `event` | Event or Ancient encounter | `choose_event_option`, `advance_dialogue` |
 | `rest_site` | Rest site | `choose_rest_option`, `proceed` |
@@ -137,6 +137,7 @@ Example searches:
 |---|---|---|
 | `select_card_reward` | `card_index`: int | Pick a card to add to deck. |
 | `skip_card_reward` | _(none)_ | Skip the card reward (if allowed). |
+| `choose_card_reward_alternative` | `option_id`: string (case-insensitive) or `index`: int | Activate an entry of `card_reward.alternatives` (Skip, REROLL, relic options like Pael's Wing `SACRIFICE`). |
 
 ### Map (`map`)
 

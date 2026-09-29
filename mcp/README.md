@@ -22,6 +22,7 @@
 | `rewards_claim(reward_index)` | Rewards | Claim a reward from the post-combat screen |
 | `rewards_pick_card(card_index)` | Rewards | Select a card from the card reward screen |
 | `rewards_skip_card()` | Rewards | Skip the card reward |
+| `rewards_choose_alternative(option_id, index)` | Rewards | Choose a card reward alternative (Skip, REROLL, Pael's Wing SACRIFICE, ...) |
 | `map_choose_node(node_index)` | Map | Choose a map node to travel to |
 | `rest_choose_option(option_index)` | Rest Site | Choose a rest site option (rest, smith, etc.) |
 | `shop_purchase(item_index)` | Shop | Purchase an item from the shop |
@@ -73,6 +74,7 @@ All multiplayer tools are prefixed with `mp_`. They route through `/api/v1/multi
 | `mp_rewards_claim(reward_index)` | Rewards | Claim a post-combat reward |
 | `mp_rewards_pick_card(card_index)` | Rewards | Select a card from the card reward screen |
 | `mp_rewards_skip_card()` | Rewards | Skip the card reward |
+| `mp_rewards_choose_alternative(option_id, index)` | Rewards | Choose a card reward alternative (Skip, REROLL, SACRIFICE, ...) |
 | `mp_deck_select_card(card_index)` | Card Select | Pick/toggle a card in the selection screen |
 | `mp_deck_confirm_selection()` | Card Select | Confirm the current card selection |
 | `mp_deck_cancel_selection()` | Card Select | Cancel/skip card selection |

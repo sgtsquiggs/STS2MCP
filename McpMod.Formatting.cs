@@ -755,6 +755,13 @@ public static partial class McpMod
 
         bool canSkip = cardReward.TryGetValue("can_skip", out var cs) && cs is true;
         sb.AppendLine($"**Can skip:** {(canSkip ? "Yes" : "No")}");
+
+        if (cardReward.TryGetValue("alternatives", out var altsObj) && altsObj is List<Dictionary<string, object?>> alts && alts.Count > 0)
+        {
+            sb.AppendLine("**Alternatives** (`choose_card_reward_alternative`):");
+            foreach (var alt in alts)
+                sb.AppendLine($"- [{alt["index"]}] **{alt["title"] ?? alt["id"]}** (id: {alt["id"] ?? "?"}, after: {alt["after"] ?? "?"})");
+        }
         sb.AppendLine();
     }
 

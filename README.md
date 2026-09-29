@@ -160,7 +160,8 @@ podman run --rm --memory 3g --memory-swap 3g -v "$PWD:/src:Z" -v "$GAME:/game:ro
 For scripted clients the state also exposes: `battle.ready_for_input` (plus `is_action_queue_empty`,
 `is_action_running`, `player_actions_disabled`, `player_phase`), `player.deck` on every in-run screen,
 `player.hand_full` / `max_hand_size` in combat, and per-node `markers` on the map (Fur Coat nodes get
-`enemies_one_hp: true`). Actions `abandon_run` (`confirm: true`) and `save_and_quit` leave a run from any
+`enemies_one_hp: true`). `card_reward.alternatives` lists the reward screen's extra buttons (Skip, REROLL,
+Pael's Wing `SACRIFICE`), chosen with `choose_card_reward_alternative` (`option_id` or `index`). Actions `abandon_run` (`confirm: true`) and `save_and_quit` leave a run from any
 screen. See [docs/raw-full.md](docs/raw-full.md) for details.
 
 ### Build instructions for macOS

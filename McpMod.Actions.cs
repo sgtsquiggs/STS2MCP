@@ -72,6 +72,7 @@ public static partial class McpMod
             "claim_reward" => ExecuteClaimReward(data),
             "select_card_reward" => ExecuteSelectCardReward(data),
             "skip_card_reward" => ExecuteSkipCardReward(),
+            "choose_card_reward_alternative" => ExecuteChooseCardRewardAlternative(data),
             "proceed" => ExecuteProceed(),
             "select_card" => ExecuteSelectCard(data),
             "confirm_selection" => ExecuteConfirmSelection(),
@@ -611,6 +612,55 @@ public static partial class McpMod
         {
             ["status"] = "ok",
             ["message"] = "Skipping card reward"
+        };
+    }
+
+    private static Dictionary<string, object?> ExecuteChooseCardRewardAlternative(Dictionary<string, JsonElement> data)
+    {
+        var overlay = NOverlayStack.Instance?.Peek();
+        if (overlay is not NCardRewardSelectionScreen cardScreen)
+            return Error("Card reward selection screen is not open");
+
+        var entries = GetCardRewardAlternatives(cardScreen);
+        if (entries.Count == 0)
+            return Error("No alternatives available on this card reward");
+
+        string Describe() => string.Join(", ", entries.Select((e, i) => $"{i}:{e.option?.OptionId ?? "?"}"));
+
+        int chosen = -1;
+        if (data.TryGetValue("option_id", out var idElem) && idElem.ValueKind == JsonValueKind.String)
+        {
+            string optionId = idElem.GetString() ?? "";
+            chosen = entries.FindIndex(e =>
+                string.Equals(e.option?.OptionId, optionId, System.StringComparison.OrdinalIgnoreCase));
+            if (chosen < 0)
+                return Error($"No alternative with option_id '{optionId}' (available: {Describe()})");
+        }
+        else if (data.TryGetValue("index", out var indexElem) && indexElem.ValueKind == JsonValueKind.Number)
+        {
+            chosen = indexElem.GetInt32();
+            if (chosen < 0 || chosen >= entries.Count)
+                return Error($"Alternative index {chosen} out of range (available: {Describe()})");
+        }
+        else
+        {
+            return Error($"Missing 'option_id' (string) or 'index' (int) (available: {Describe()})");
+        }
+
+        var (button, option) = entries[chosen];
+        if (!button.IsEnabled)
+            return Error($"Alternative {chosen} ({option?.OptionId ?? "?"}) is not enabled");
+
+        // Same path as a player click: the screen's Released handler runs
+        // OnAlternateRewardSelected(AfterSelected) and then the option's OnSelect.
+        button.ForceClick();
+
+        return new Dictionary<string, object?>
+        {
+            ["status"] = "ok",
+            ["message"] = $"Choosing card reward alternative: {option?.OptionId ?? GetCardRewardAlternativeTitle(button, option) ?? chosen.ToString()}",
+            ["option_id"] = option?.OptionId,
+            ["after"] = option?.AfterSelected.ToString()
         };
     }
 

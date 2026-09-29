@@ -45,6 +45,7 @@ public static partial class McpMod
             "claim_reward" => ExecuteClaimReward(data),
             "select_card_reward" => ExecuteSelectCardReward(data),
             "skip_card_reward" => ExecuteSkipCardReward(),
+            "choose_card_reward_alternative" => ExecuteChooseCardRewardAlternative(data),
             "proceed" => ExecuteProceed(),
             "select_card" => ExecuteSelectCard(data),
             "confirm_selection" => ExecuteConfirmSelection(),

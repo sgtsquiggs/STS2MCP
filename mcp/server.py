@@ -487,6 +487,31 @@ async def rewards_skip_card() -> str:
         return _handle_error(e)
 
 
+@mcp.tool()
+async def rewards_choose_alternative(option_id: str | None = None, index: int | None = None) -> str:
+    """[Rewards] Choose a card reward alternative instead of a card.
+
+    Alternatives are listed in `card_reward.alternatives` (index, id, title, after), e.g.
+    "Skip", "REROLL", or "SACRIFICE" (Pael's Wing: sacrifice the reward; after 2 you get a relic).
+    Activates the button exactly like a click. Pass option_id (case-insensitive) or index.
+
+    Args:
+        option_id: The alternative's `id` (e.g. "SACRIFICE"). Takes precedence over index.
+        index: The alternative's 0-based `index`.
+    """
+    if option_id is None and index is None:
+        return "Error: provide option_id or index."
+    payload: dict = {"action": "choose_card_reward_alternative"}
+    if option_id is not None:
+        payload["option_id"] = option_id
+    else:
+        payload["index"] = index
+    try:
+        return await _post(payload)
+    except Exception as e:
+        return _handle_error(e)
+
+
 # ---------------------------------------------------------------------------
 # Map (state_type: map)
 # ---------------------------------------------------------------------------
@@ -980,6 +1005,31 @@ async def mp_rewards_skip_card() -> str:
     """[Multiplayer Rewards] Skip the card reward."""
     try:
         return await _mp_post({"action": "skip_card_reward"})
+    except Exception as e:
+        return _handle_error(e)
+
+
+@mcp.tool()
+async def mp_rewards_choose_alternative(option_id: str | None = None, index: int | None = None) -> str:
+    """[Multiplayer Rewards] Choose a card reward alternative instead of a card.
+
+    Alternatives are listed in `card_reward.alternatives` (index, id, title, after), e.g.
+    "Skip", "REROLL", or "SACRIFICE" (Pael's Wing: sacrifice the reward; after 2 you get a relic).
+    Activates the button exactly like a click. Pass option_id (case-insensitive) or index.
+
+    Args:
+        option_id: The alternative's `id` (e.g. "SACRIFICE"). Takes precedence over index.
+        index: The alternative's 0-based `index`.
+    """
+    if option_id is None and index is None:
+        return "Error: provide option_id or index."
+    payload: dict = {"action": "choose_card_reward_alternative"}
+    if option_id is not None:
+        payload["option_id"] = option_id
+    else:
+        payload["index"] = index
+    try:
+        return await _mp_post(payload)
     except Exception as e:
         return _handle_error(e)
 

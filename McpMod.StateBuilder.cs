@@ -5,6 +5,7 @@ using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -1911,7 +1912,80 @@ public static partial class McpMod
         var altButtons = FindAll<NCardRewardAlternativeButton>(cardScreen);
         state["can_skip"] = altButtons.Count > 0;
 
+        var alternatives = new List<Dictionary<string, object?>>();
+        var altEntries = GetCardRewardAlternatives(cardScreen);
+        for (int i = 0; i < altEntries.Count; i++)
+        {
+            var (button, option) = altEntries[i];
+            alternatives.Add(new Dictionary<string, object?>
+            {
+                ["index"] = i,
+                ["id"] = option?.OptionId,
+                ["title"] = GetCardRewardAlternativeTitle(button, option),
+                ["after"] = option?.AfterSelected.ToString()
+            });
+        }
+        state["alternatives"] = alternatives;
+
         return state;
+    }
+
+    /// <summary>
+    /// Pairs the live alternative buttons on a card reward screen (Skip, Reroll, relic-added
+    /// options such as Pael's Wing's SACRIFICE) with the CardRewardAlternative each one
+    /// represents. RefreshOptions creates one button per _extraOptions entry, in order, inside
+    /// _rewardAlternativesContainer (stale buttons are QueueFree'd, which IsLiveNode skips).
+    /// Option is null if the pairing can't be established (e.g. mid-refresh).
+    /// </summary>
+    internal static List<(NCardRewardAlternativeButton button, CardRewardAlternative? option)> GetCardRewardAlternatives(
+        NCardRewardSelectionScreen screen)
+    {
+        var result = new List<(NCardRewardAlternativeButton, CardRewardAlternative?)>();
+
+        List<NCardRewardAlternativeButton> buttons;
+        var container = GetInstanceFieldValue(screen, "_rewardAlternativesContainer") as Node;
+        if (IsLiveNode(container))
+            buttons = container!.GetChildren().OfType<NCardRewardAlternativeButton>().Where(b => IsLiveNode(b)).ToList();
+        else
+            buttons = FindAll<NCardRewardAlternativeButton>(screen);
+
+        IReadOnlyList<CardRewardAlternative>? options = null;
+        try { options = GetInstanceFieldValue(screen, "_extraOptions") as IReadOnlyList<CardRewardAlternative>; }
+        catch { }
+
+        bool sameCount = options != null && options.Count == buttons.Count;
+        for (int i = 0; i < buttons.Count; i++)
+        {
+            CardRewardAlternative? option = null;
+            if (sameCount)
+            {
+                option = options![i];
+            }
+            else if (options != null)
+            {
+                // Fall back to matching the button label against each option's localized title.
+                var label = GetInstanceFieldValue(buttons[i], "_optionName") as string;
+                if (label != null)
+                {
+                    try { option = options.FirstOrDefault(o => o.Title.GetFormattedText() == label); }
+                    catch { }
+                }
+            }
+            result.Add((buttons[i], option));
+        }
+        return result;
+    }
+
+    private static string? GetCardRewardAlternativeTitle(NCardRewardAlternativeButton button, CardRewardAlternative? option)
+    {
+        string? title = option != null ? SafeGetText(() => option.Title) : null;
+        if (string.IsNullOrEmpty(title))
+        {
+            try { title = GetInstanceFieldValue(button, "_optionName") as string; }
+            catch { }
+            if (title != null) title = StripRichTextTags(title);
+        }
+        return title;
     }
 
     private static Dictionary<string, object?> BuildCardSelectState(NCardGridSelectionScreen screen, RunState runState)
