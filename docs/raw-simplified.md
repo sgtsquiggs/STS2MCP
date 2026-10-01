@@ -165,7 +165,7 @@ Example searches:
 
 | Action | Parameters | When to Use |
 |---|---|---|
-| `shop_purchase` | `index`: int | Buy an item by its index. Must be stocked and affordable. |
+| `shop_purchase` | `index`: int | Buy an item by its index. Must be stocked and affordable; a potion also needs a free slot and no Sozu. `ok` means started: re-read gold to confirm. |
 | `proceed` | _(none)_ | Leave the shop. |
 
 ### Treasure (`treasure`)

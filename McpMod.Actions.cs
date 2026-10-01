@@ -32,6 +32,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Potions;
 using MegaCrit.Sts2.Core.GameActions;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
@@ -490,6 +491,18 @@ public static partial class McpMod
             return Error("Item is sold out");
         if (!entry.EnoughGold)
             return Error($"Not enough gold (need {entry.Cost}, have {player.Gold})");
+
+        // The purchase below is fire-and-forget, and the game refuses a potion silently (PurchaseStatus.FailureSpace /
+        // FailureForbidden) when the belt is full or a relic like Sozu forbids potions. Check both here so the caller
+        // gets an error instead of "ok" for a purchase that never happens.
+        if (entry is MerchantPotionEntry { Model: { } potionModel })
+        {
+            string potionName = SafeGetText(() => potionModel.Title) ?? "potion";
+            if (!Hook.ShouldProcurePotion(player.RunState, player.Creature.CombatState, potionModel, player))
+                return Error($"Potion '{potionName}' can't be obtained (a relic such as Sozu forbids potions)");
+            if (!player.HasOpenPotionSlots)
+                return Error($"Potion slots are full ({player.MaxPotionCount}); discard a potion before buying '{potionName}'");
+        }
 
         // Fire-and-forget purchase (same path as AutoSlay)
         _ = entry.OnTryPurchaseWrapper(inventory);

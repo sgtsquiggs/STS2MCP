@@ -1403,7 +1403,9 @@ Purchase a shop item.
 |---|---|---|---|
 | `index` | int | Yes | 0-based index in the flat items list |
 
-**Errors:** Not in shop, item sold out, not enough gold, inventory not ready.
+**Errors:** Not in shop, item sold out, not enough gold, inventory not ready; for a potion, potion slots full or potions forbidden (Sozu).
+
+The purchase itself runs asynchronously: `ok` means it was started, not that it completed. Re-read the state and check `player.gold` (and the potion belt or relics) to confirm it.
 
 ### `choose_map_node`
 
