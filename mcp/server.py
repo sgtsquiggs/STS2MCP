@@ -190,6 +190,10 @@ async def menu_select(option: str, seed: str | None = None) -> str:
         join_<player_id> (e.g. "join_0" or "join_76561198000000000").
       - On menu_screen "multiplayer_load_lobby", use confirm (or embark) to
         ready up; the run resumes once everyone is connected and ready.
+      - On menu_screen "character_select" (SP and MP) the state has
+        `ascension` / `max_ascension` / `selected_character`; "ascension_<N>"
+        sets the ascension (host/SP, N <= max_ascension). RANDOM_CHARACTER is
+        flagged `random` and embarks at its own (usually 0) ascension.
       - On menu_screen "character_select" while in MP, the state includes a
         `lobby` block with the roster, ready states, and ascension; "unready"
         becomes available after you confirm/embark.

@@ -238,7 +238,10 @@ Menu sub-screens expose their own options:
 - `multiplayer_join`: `refresh`, `back`, `join_<index>`, `join_<player_id>`
 - `multiplayer_load_lobby`: `confirm` / `embark`, `unready`, `back`
 - `profile_select`: `profile_1`, `profile_2`, `profile_3`, `back`
-- `character_select`: character IDs/names, `back`, `confirm` / `embark`, `unready` (MP, after readying)
+- `character_select`: character IDs/names, `ascension_<N>` (0..`max_ascension`; host/SP only), `back`, `confirm` / `embark`, `unready` (MP, after readying).
+  The state carries `ascension`, `max_ascension` and `selected_character` (SP and MP): the lobby ascension the run will embark with.
+  Selecting a character sets its preferred ascension; `RANDOM_CHARACTER` (flagged `"random": true`) uses its own preferred ascension,
+  then clamps to the resolved character's max at embark, so it usually starts at A0.
 - `tutorial_prompt`: `no`, `yes`
 - `popup`: advertised popup button labels, normalized to lowercase words such as `ignore` or `back`
 - `timeline`: `advance`, `back`

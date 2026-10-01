@@ -266,13 +266,17 @@ public static partial class McpMod
                 var id = character.GetValueOrDefault("id")?.ToString() ?? "?";
                 var name = character.GetValueOrDefault("name")?.ToString() ?? id;
                 var locked = character.TryGetValue("locked", out var lockedObj) && lockedObj is true ? " (LOCKED)" : "";
+                if (character.TryGetValue("selected", out var selObj) && selObj is true)
+                    locked += " (SELECTED)";
                 var hp = character.GetValueOrDefault("hp")?.ToString() ?? "?";
                 var gold = character.GetValueOrDefault("gold")?.ToString() ?? "?";
                 var energy = character.GetValueOrDefault("energy")?.ToString() ?? "?";
                 sb.AppendLine($"- `{id}` **{name}**{locked} - HP: {hp} | Gold: {gold} | Energy: {energy}");
             }
             sb.AppendLine();
-            sb.AppendLine("Use `menu_select` with an unlocked character ID or name, then `confirm`/`embark`.");
+            if (state.TryGetValue("ascension", out var ascObj) && ascObj != null)
+                sb.AppendLine($"Ascension: {ascObj} / max {state.GetValueOrDefault("max_ascension")}");
+            sb.AppendLine("Use `menu_select` with an unlocked character ID or name, optionally `ascension_<N>`, then `confirm`/`embark`.");
             sb.AppendLine();
         }
     }

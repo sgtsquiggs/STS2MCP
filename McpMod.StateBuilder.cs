@@ -645,17 +645,27 @@ public static partial class McpMod
                 {
                     var characterId = cm.Id.Entry;
                     var characterName = SafeGetText(() => cm.Title);
-                    options.Add(new Dictionary<string, object?>
+                    var opt = new Dictionary<string, object?>
                     {
                         ["name"] = characterId,
                         ["enabled"] = !btn.IsLocked
-                    });
+                    };
+                    // The Random button resolves to an arbitrary character at embark and
+                    // takes its own ascension (preferred of RANDOM_CHARACTER), not the
+                    // resolved character's. Flag it so callers don't pick it by accident.
+                    if (btn.IsRandom)
+                        opt["random"] = true;
+                    if (btn.IsSelected)
+                        opt["selected"] = true;
+                    options.Add(opt);
 
                     var charData = new Dictionary<string, object?>
                     {
                         ["name"] = characterName,
                         ["id"] = characterId,
                         ["locked"] = btn.IsLocked,
+                        ["random"] = btn.IsRandom,
+                        ["selected"] = btn.IsSelected,
                         ["hp"] = cm.StartingHp,
                         ["gold"] = cm.StartingGold,
                         ["energy"] = cm.MaxEnergy,
@@ -740,6 +750,33 @@ public static partial class McpMod
                 ["enabled"] = backClickable.IsEnabled
             });
         }
+
+        // Lobby ascension and the locally selected character, in SP as well as MP. This is
+        // what the run will embark with (SP: StartNewSingleplayerRun reads lobby.Ascension;
+        // a RANDOM_CHARACTER pick is clamped to the resolved character's max at embark).
+        // ascension_<N> options let the host/SP player set it, clamped to max_ascension.
+        try
+        {
+            var lobby = charSelect.Lobby;
+            if (lobby != null)
+            {
+                result["ascension"] = lobby.Ascension;
+                result["max_ascension"] = lobby.MaxAscension;
+                try { result["selected_character"] = lobby.LocalPlayer.character?.Id.Entry; } catch { }
+                if (lobby.NetService == null || lobby.NetService.Type != NetGameType.Client)
+                {
+                    for (int a = 0; a <= lobby.MaxAscension; a++)
+                    {
+                        options.Add(new Dictionary<string, object?>
+                        {
+                            ["name"] = $"ascension_{a}",
+                            ["enabled"] = a != lobby.Ascension
+                        });
+                    }
+                }
+            }
+        }
+        catch { }
 
         // MP lobby block — surfaces roster / ready state / ascension when this character
         // select is part of a host or client lobby. SP runs leave the field absent.

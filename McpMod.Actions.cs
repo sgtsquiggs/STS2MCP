@@ -1773,6 +1773,9 @@ public static partial class McpMod
             return Error("Embark button not available — select a character first");
         }
 
+        if (option.StartsWith("ascension_", System.StringComparison.OrdinalIgnoreCase))
+            return SetCharacterSelectAscension(charSelect, option.Substring("ascension_".Length));
+
         var buttons = FindAll<NCharacterSelectButton>(charSelect);
         foreach (var btn in buttons)
         {
@@ -1783,10 +1786,66 @@ public static partial class McpMod
                 if (btn.IsLocked)
                     return Error($"Character '{option}' is locked");
                 btn.Select();
-                return new Dictionary<string, object?> { ["status"] = "ok", ["message"] = $"Selected {SafeGetText(() => btn.Character.Title)}. Use 'confirm' to embark." };
+                var selected = new Dictionary<string, object?> { ["status"] = "ok", ["message"] = $"Selected {SafeGetText(() => btn.Character.Title)}. Use 'confirm' to embark." };
+                try
+                {
+                    if (charSelect.Lobby is { } lobby)
+                    {
+                        selected["ascension"] = lobby.Ascension;
+                        selected["max_ascension"] = lobby.MaxAscension;
+                    }
+                }
+                catch { }
+                return selected;
             }
         }
         return Error($"Character '{option}' not found. Available: {string.Join(", ", buttons.Where(b => !b.IsLocked).Select(b => b.Character?.Id.Entry))}");
+    }
+
+    // menu_select ascension_<N> on character_select: set the lobby ascension through the
+    // ascension panel (the same path as its arrow buttons), so OnAscensionPanelLevelChanged
+    // syncs it into StartRunLobby. Refused above max_ascension rather than clamped, so the
+    // caller never embarks at a level it didn't ask for.
+    private static Dictionary<string, object?> SetCharacterSelectAscension(
+        NCharacterSelectScreen charSelect,
+        string levelText)
+    {
+        if (!int.TryParse(levelText, out var level) || level < 0)
+            return Error($"Invalid ascension '{levelText}'. Use ascension_<N> with N from 0 to max_ascension");
+
+        var lobby = charSelect.Lobby;
+        if (lobby == null)
+            return Error("No lobby on the character select screen");
+        if (lobby.NetService != null && lobby.NetService.Type == MegaCrit.Sts2.Core.Multiplayer.Game.NetGameType.Client)
+            return Error("Only the host can change the ascension");
+        if (level > lobby.MaxAscension)
+            return Error($"Ascension {level} is above this character's max ascension {lobby.MaxAscension}");
+
+        try
+        {
+            if (lobby.LocalPlayer.isReady)
+                return Error("Already readied/embarking; ascension can no longer be changed");
+        }
+        catch { }
+
+        var panel = GetInstanceFieldValue(charSelect, "_ascensionPanel") as NAscensionPanel;
+        if (panel != null)
+            panel.SetAscensionLevel(level);
+        if (lobby.Ascension != level)
+            lobby.SyncAscensionChange(level);
+        if (panel != null && panel.Ascension != lobby.Ascension)
+            panel.SetAscensionLevel(lobby.Ascension);
+
+        if (lobby.Ascension != level)
+            return Error($"Ascension did not change: lobby is at {lobby.Ascension}, wanted {level}");
+
+        return new Dictionary<string, object?>
+        {
+            ["status"] = "ok",
+            ["message"] = $"Ascension set to {lobby.Ascension} (max {lobby.MaxAscension})",
+            ["ascension"] = lobby.Ascension,
+            ["max_ascension"] = lobby.MaxAscension
+        };
     }
 
     private static Dictionary<string, object?>? TryHandleQueuedTimelineUnlock(NTimelineScreen timelineScreen)
