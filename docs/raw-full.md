@@ -42,6 +42,20 @@ Every response (except `menu`) includes these top-level fields alongside the sta
 }
 ```
 
+Every state (including `menu`, single- and multiplayer) also carries `settings`:
+
+```jsonc
+"settings": {
+  "instant_mode": true,       // PrefsSave.FastMode == Instant (null while prefs are still loading)
+  "fast_mode": "instant",     // none | normal | fast | instant
+  "auto_instant_mode": true   // mod re-enables Instant Mode after boot / profile switch
+}
+```
+
+The game downgrades Instant to Fast at every boot, so the mod turns it back on once per loaded
+prefs (boot, profile switch) as soon as the main menu exists. Disable with `"auto_instant_mode": false`
+in `mods/STS2_MCP.conf` or env `STS2_MCP_AUTO_INSTANT_MODE=0`.
+
 ### Player Object
 
 Always present at the top level (except `menu`). Contains everything about the local player.
@@ -1185,6 +1199,17 @@ Errors (`status: "error"`): run in progress, a popup is open, not on the top-lev
 disables the Timeline until the run is continued or abandoned), unknown / non-pending `epoch_id`, or an epoch without a slot yet.
 
 ---
+
+### `set_setting`
+
+Change a game setting. Works on any screen. Only `instant_mode` is supported; `off` falls back to Fast
+(like the settings tickbox). Prefs are saved, as the settings screen does on close.
+
+```json
+{ "action": "set_setting", "setting": "instant_mode", "value": "on" }
+```
+
+Response: `{ "status": "ok", "message": "Instant Mode on", "settings": { ... } }`.
 
 ### `play_card`
 

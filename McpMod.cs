@@ -84,6 +84,7 @@ public static partial class McpMod
         {
             // Optional settings UI patches should not block the HTTP bridge itself.
             TryApplyHarmonyPatches();
+            LoadAutoInstantModeSetting();
 
             // Connect to main thread process frame for action execution
             var tree = (SceneTree)Engine.GetMainLoop();
@@ -126,6 +127,9 @@ public static partial class McpMod
 
     private static void ProcessMainThreadQueue()
     {
+        try { MaintainAutoInstantMode(); }
+        catch (Exception ex) { GD.PrintErr($"[STS2 MCP] Auto Instant Mode error: {ex}"); }
+
         int processed = 0;
         while (_mainThreadQueue.TryDequeue(out var action) && processed < 10)
         {
@@ -294,7 +298,7 @@ public static partial class McpMod
 
         try
         {
-            var stateTask = RunOnMainThread(() => BuildMultiplayerGameState());
+            var stateTask = RunOnMainThread(() => WithSettings(BuildMultiplayerGameState()));
             var state = stateTask.GetAwaiter().GetResult();
 
             if (format == "markdown")
@@ -349,6 +353,19 @@ public static partial class McpMod
 
         string action = actionElem.GetString() ?? "";
 
+        if (action == "set_setting")
+        {
+            try
+            {
+                SendJson(response, RunOnMainThread(() => ExecuteSetSetting(parsed)).GetAwaiter().GetResult());
+            }
+            catch (Exception ex)
+            {
+                SendError(response, 500, $"set_setting failed: {ex.Message}");
+            }
+            return;
+        }
+
         // Menu actions (FTUE/popup dismissal, game-over, character select, etc.) are
         // scene-tree-driven and equally valid in MP. Route them to the shared handler
         // so MP clients can dismiss blocking FTUE prompts without going through the
@@ -388,7 +405,7 @@ public static partial class McpMod
 
         try
         {
-            var stateTask = RunOnMainThread(() => BuildGameState());
+            var stateTask = RunOnMainThread(() => WithSettings(BuildGameState()));
             var state = stateTask.GetAwaiter().GetResult();
 
             if (format == "markdown")
@@ -449,6 +466,19 @@ public static partial class McpMod
         }
 
         string action = actionElem.GetString() ?? "";
+
+        if (action == "set_setting")
+        {
+            try
+            {
+                SendJson(response, RunOnMainThread(() => ExecuteSetSetting(parsed)).GetAwaiter().GetResult());
+            }
+            catch (Exception ex)
+            {
+                SendError(response, 500, $"set_setting failed: {ex.Message}");
+            }
+            return;
+        }
 
         if (action == "reveal_epoch")
         {

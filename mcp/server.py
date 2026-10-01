@@ -848,6 +848,22 @@ async def reveal_epoch(epoch_id: str | None = None, max_steps: int = 80) -> str:
         return _handle_error(e)
 
 
+@mcp.tool()
+async def set_instant_mode(on: bool = True) -> str:
+    """[Any screen] Turn the game's Instant Mode on or off (state `settings.instant_mode`).
+
+    The game resets Instant Mode to Fast on every restart; the mod re-enables it automatically
+    (unless `auto_instant_mode` is off), so this is mostly for verification or turning it off.
+
+    Args:
+        on: True for Instant Mode, False to fall back to Fast Mode.
+    """
+    try:
+        return await _post({"action": "set_setting", "setting": "instant_mode", "value": "on" if on else "off"})
+    except Exception as e:
+        return _handle_error(e)
+
+
 # ===========================================================================
 # MULTIPLAYER tools — all route through /api/v1/multiplayer
 # ===========================================================================
