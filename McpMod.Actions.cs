@@ -792,9 +792,8 @@ public static partial class McpMod
         if (overlay is not NCardGridSelectionScreen screen)
             return Error("No card selection screen is open");
 
-        // Check all preview containers (upgrade uses UpgradeSinglePreviewContainer / UpgradeMultiPreviewContainer,
-        // NDeckCardSelectScreen uses PreviewContainer with %PreviewConfirm)
-        foreach (var containerName in new[] { "%UpgradeSinglePreviewContainer", "%UpgradeMultiPreviewContainer", "%PreviewContainer" })
+        // Check all preview containers (upgrade / enchant single+multi, generic PreviewContainer)
+        foreach (var containerName in CardSelectPreviewContainerNames)
         {
             var container = screen.GetNodeOrNull<Godot.Control>(containerName);
             if (container?.Visible == true)
@@ -870,7 +869,7 @@ public static partial class McpMod
             return Error("No card selection screen is open");
 
         // If preview is showing, cancel back to selection
-        foreach (var containerName in new[] { "%UpgradeSinglePreviewContainer", "%UpgradeMultiPreviewContainer", "%PreviewContainer" })
+        foreach (var containerName in CardSelectPreviewContainerNames)
         {
             var container = screen.GetNodeOrNull<Godot.Control>(containerName);
             if (container?.Visible == true)

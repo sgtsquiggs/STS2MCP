@@ -16,6 +16,20 @@ namespace STS2_MCP;
 
 public static partial class McpMod
 {
+    // Preview containers an NCardGridSelectionScreen shows after the main Confirm, each with its
+    // own "Confirm" / "Cancel" (or %PreviewConfirm / %PreviewCancel) buttons:
+    // NDeckUpgradeSelectScreen -> Upgrade{Single,Multi}PreviewContainer,
+    // NDeckEnchantSelectScreen -> Enchant{Single,Multi}PreviewContainer,
+    // NDeckCardSelectScreen -> PreviewContainer.
+    internal static readonly string[] CardSelectPreviewContainerNames =
+    {
+        "%UpgradeSinglePreviewContainer",
+        "%UpgradeMultiPreviewContainer",
+        "%EnchantSinglePreviewContainer",
+        "%EnchantMultiPreviewContainer",
+        "%PreviewContainer",
+    };
+
     // STS2 v0.107 removed CombatManager.IsPlayPhase. The turn phase now lives per-player on
     // PlayerCombatState.Phase, so these helpers rebuild the old semantics: we're in the play
     // phase when combat is running, it's the player side's turn, and the player is in Play.
