@@ -9,6 +9,7 @@
 - **Continuous:** notice a problem → log it with evidence (greedy: the page changelog; rlsim: `rlsim_notes.md`) → ship when the logged evidence gives ≥70% confidence it's a net win.
 - **Mid-run:** ship only fixes that will matter for the rest of the current run. Defer the rest.
 - **Between runs:** make the bigger changes (simulator data refresh, scoring rework, new features).
+- **Two sessions:** a *runner* session plays and an *analyst* session ships improvements. They talk through SendMessage. The protocol (ownership, reload levels, pausing) is in `.claude/scripts/COLLAB.md`, and the analyst kickoff is `/analyst`.
 - **Parallelism:** delegate code work to background subagents while play continues. Live-used files (sts.py, advisor_rlsim.py) are edited in a copy and swapped in atomically.
 - **Commit as we go:** the toolkit repo is `~/Projects/sts2-autoplay` (private GitHub repo; CI runs ruff + unit tests). `.claude/scripts` is a symlink to it.
 
